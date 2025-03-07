@@ -2,7 +2,11 @@
   <q-layout view="lHh Lpr lFf">
     <q-header elevated>
       <q-toolbar>
-        <q-toolbar-title>
+        <!-- Random Flag on the Left Side -->
+        <q-img :src="randomFlag" width="32px" height="24px" class="q-mr-md random-flag" />
+
+
+        <q-toolbar-title style="margin-left: 30px;">
           CC
         </q-toolbar-title>
         <q-space />
@@ -35,7 +39,7 @@
           </template>
         </q-select>
 
-        <q-select
+        <!-- <q-select
           v-model="selectedFormat"
           :options="timeFormats"
           label="Time Format"
@@ -43,7 +47,7 @@
           outlined
           options-dense
           class="q-mr-md"
-        />
+        /> -->
 
         <div class="q-mr-md text-caption">
           {{ currentDateTime }}
@@ -72,13 +76,14 @@ const regions = [
   { label: '🇦🇺 Australia (AEST)', value: 'AU', flag: 'https://flagcdn.com/w40/au.png', locale: 'en-AU', timeZone: 'Australia/Sydney' }
 ];
 
-const timeFormats = [
-  { label: 'Long Format', value: 'long' },
-  { label: 'Short Format', value: 'short' },
-  { label: '24-Hour Format', value: '24hour' }
-];
+// const timeFormats = [
+//   { label: 'Long Format', value: 'long' },
+//   { label: 'Short Format', value: 'short' },
+//   { label: '24-Hour Format', value: '24hour' }
+// ];
 
 const selectedFlag = ref(regions.find(r => r.value === selectedRegion.value)?.flag || '');
+const randomFlag = ref(regions[0].flag);
 
 const updateDateTime = () => {
   const now = new Date();
@@ -100,10 +105,24 @@ const updateDateTime = () => {
   selectedFlag.value = region.flag;
 };
 
+const updateRandomFlag = () => {
+  const randomIndex = Math.floor(Math.random() * regions.length);
+  randomFlag.value = regions[randomIndex].flag;
+};
+
 watch([selectedFormat, selectedRegion], updateDateTime);
 
 onMounted(() => {
   updateDateTime();
   setInterval(updateDateTime, 1000);
+  setInterval(updateRandomFlag, 1000);
 });
 </script>
+
+<style scoped>
+.random-flag {
+  position: absolute;
+  left: 10px;
+  top: 15px;
+}
+</style>
