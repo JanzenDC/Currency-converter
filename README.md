@@ -1,6 +1,4 @@
-Here's a **README.md** file for your **Currency Converter** project:  
 
-```md
 # Currency Converter 🌍💱
 
 A simple and user-friendly currency converter built using **Vue.js** and **Quasar Framework**. This tool allows users to quickly convert between different currencies using real-time exchange rates.
@@ -25,7 +23,7 @@ A simple and user-friendly currency converter built using **Vue.js** and **Quasa
 
 1. Clone this repository:
    ```sh
-   git clone https://github.com/your-username/currency-converter.git
+   git clone https://github.com/JanzenDC/currency-converter.git
    cd currency-converter
    ```
 
@@ -51,9 +49,10 @@ A simple and user-friendly currency converter built using **Vue.js** and **Quasa
 
 ## Screenshots 🖼️
 
-| Currency Selection | Conversion Results | Historical Data |
-|-------------------|-------------------|----------------|
-| ![Select Currencies](https://via.placeholder.com/300) | ![Conversion Results](https://via.placeholder.com/300) | ![Historical Data](https://via.placeholder.com/300) |
+![image](https://github.com/user-attachments/assets/53f22819-1087-4b01-8f0f-8f9773a3009c)
+![image](https://github.com/user-attachments/assets/682ba2fe-1408-4dc8-bb91-4c92afee0a14)
+![image](https://github.com/user-attachments/assets/b73b8df0-55f0-4e9a-85b7-cd007b8bddfb)
+
 
 ## Contributing 🤝
 
@@ -71,11 +70,6 @@ A simple and user-friendly currency converter built using **Vue.js** and **Quasa
    git push origin feature-name
    ```
 5. Open a Pull Request.  
-
-## License 📜
-
-This project is licensed under the **MIT License** – feel free to use and modify it!  
-
 ---
 
 💡 **Tip:** Stay updated with exchange rates before making conversions! 🚀  
