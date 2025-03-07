@@ -87,7 +87,6 @@
                 v-model="fromAmount"
                 outlined
                 type="number"
-                @input="convertFromTo"
                 class="text-h6"
               />
               <q-tooltip anchor="bottom middle" self="top middle">Enter the amount to convert</q-tooltip>
@@ -98,7 +97,6 @@
                 v-model="toAmount"
                 outlined
                 type="number"
-                @input="convertToFrom"
                 class="text-h6"
                 readonly=""
               />
@@ -193,17 +191,13 @@
 <script setup>
 import { ref, onMounted, watch, computed } from "vue";
 import axios from "axios";
-// import ApexCharts from 'apexcharts'
-// API configuration
+
 const API_KEY = "b7a95d335cc96db529e873ad";
 const API_URL = `https://v6.exchangerate-api.com/v6/${API_KEY}/latest/`;
 const HISTORICAL_API_URL = `https://v6.exchangerate-api.com/v6/${API_KEY}/history/`;
 
-// Currency data
 const fromCurrency = ref("GBP");
 const toCurrency = ref("EUR");
-const fromAmount = ref(10000);
-const toAmount = ref(11587.4);
 const currentDate = new Date();
 const date = ref(formatDate(currentDate));
 const selectedDate = ref(formatDateForPicker(currentDate));
@@ -214,26 +208,27 @@ const exchangeRate = ref(1.15874);
 const loading = ref(false);
 const error = ref(null);
 
-// Flag to track if we're using historical or latest rates
 const isHistoricalDate = computed(() => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-
   const selectedDateObj = new Date(selectedDate.value);
   selectedDateObj.setHours(0, 0, 0, 0);
-
   return selectedDateObj.getTime() < today.getTime();
 });
 
-// Popular currencies
-const popularCurrencies = ["USD", "GBP", "EUR", "BTC"];
+const fromAmount = ref(10000);
+const toAmount = computed(() => {
+  return fromAmount.value && exchangeRate.value
+    ? (parseFloat(fromAmount.value) * exchangeRate.value).toFixed(1)
+    : 0;
+});
 
-// All available currencies for the dropdowns
+const popularCurrencies = ["USD", "GBP", "EUR", "BTC", "PHP"];
+
 const currencyOptions = ref([
-  "USD", "GBP", "EUR", "BTC", "CAD", "JPY", "AUD", "CHF", "CNY", "INR"
+  "USD", "GBP", "EUR", "BTC", "CAD", "JPY", "AUD", "CHF", "CNY", "INR", "PHP"
 ]);
 
-// Currency names mapping
 const currencyNames = {
   USD: "US Dollar",
   GBP: "British Pound",
@@ -244,16 +239,15 @@ const currencyNames = {
   AUD: "Australian Dollar",
   CHF: "Swiss Franc",
   CNY: "Chinese Yuan",
-  INR: "Indian Rupee"
+  INR: "Indian Rupee",
+  PHP: "Philippine Peso"
 };
 
-// Functions for API calls
 const fetchExchangeRates = async (baseCurrency) => {
   loading.value = true;
   error.value = null;
 
   try {
-    // Check if we need historical rates
     if (isHistoricalDate.value) {
       await fetchHistoricalRates(baseCurrency, selectedDate.value);
     } else {
@@ -273,38 +267,26 @@ const fetchExchangeRates = async (baseCurrency) => {
   }
 };
 
-// Function to fetch historical rates
 const fetchHistoricalRates = async (baseCurrency, dateStr) => {
   try {
-    // Format date for API (YYYY/MM/DD)
     const dateParts = dateStr.split('-');
     const apiDateFormat = dateParts.join('/');
-
-    // Cache key to avoid redundant API calls
     const cacheKey = `${baseCurrency}_${dateStr}`;
 
-    // Check if we already have this historical data cached
     if (historicalRates.value[cacheKey]) {
       exchangeRates.value = historicalRates.value[cacheKey];
       updateExchangeRate();
       return;
     }
 
-    // ExchangeRate-API historical endpoint
     const response = await axios.get(`${HISTORICAL_API_URL}${baseCurrency}/${apiDateFormat}`);
 
     if (response.data.result === "success") {
-      // Find the rate for the specific date requested
       const conversion_rates = response.data.conversion_rates;
-
-      // Cache the results for future use
       historicalRates.value[cacheKey] = conversion_rates;
-
-      // Update current exchange rates
       exchangeRates.value = conversion_rates;
       updateExchangeRate();
     } else {
-      // If historical data not available, fall back to latest rates
       error.value = "Historical data not available, using latest rates";
       const latestResponse = await axios.get(`${API_URL}${baseCurrency}`);
       if (latestResponse.data.result === "success") {
@@ -316,7 +298,6 @@ const fetchHistoricalRates = async (baseCurrency, dateStr) => {
     error.value = "Failed to fetch historical rates, using latest rates";
     console.error(err);
 
-    // Fallback to latest rates if historical fetch fails
     const latestResponse = await axios.get(`${API_URL}${baseCurrency}`);
     if (latestResponse.data.result === "success") {
       exchangeRates.value = latestResponse.data.conversion_rates;
@@ -325,7 +306,6 @@ const fetchHistoricalRates = async (baseCurrency, dateStr) => {
   }
 };
 
-// Helper functions
 function formatDate(date) {
   const options = { day: 'numeric', month: 'long', year: 'numeric' };
   return date.toLocaleDateString('en-GB', options);
@@ -339,8 +319,6 @@ function updateDate() {
   const newDate = new Date(selectedDate.value);
   date.value = formatDate(newDate);
   showDatePicker.value = false;
-
-  // Fetch rates for the selected date
   fetchExchangeRates(fromCurrency.value);
 }
 
@@ -351,16 +329,9 @@ const updateExchangeRate = () => {
   }
 };
 
-// Functions for conversion
 const convertFromTo = () => {
   if (fromAmount.value && exchangeRate.value) {
     toAmount.value = (parseFloat(fromAmount.value) * exchangeRate.value).toFixed(1);
-  }
-};
-
-const convertToFrom = () => {
-  if (toAmount.value && exchangeRate.value) {
-    fromAmount.value = (parseFloat(toAmount.value) / exchangeRate.value).toFixed(0);
   }
 };
 
@@ -376,22 +347,18 @@ const swapCurrencies = () => {
   const temp = fromCurrency.value;
   fromCurrency.value = toCurrency.value;
   toCurrency.value = temp;
-
   fetchExchangeRates(fromCurrency.value);
 };
 
 const incrementDate = () => {
   const newDate = new Date(selectedDate.value);
   newDate.setDate(newDate.getDate() + 1);
-
-  // Don't allow future dates
   const today = new Date();
   if (newDate > today) {
     newDate.setDate(today.getDate());
     newDate.setMonth(today.getMonth());
     newDate.setFullYear(today.getFullYear());
   }
-
   selectedDate.value = formatDateForPicker(newDate);
   updateDate();
 };
@@ -399,8 +366,6 @@ const incrementDate = () => {
 const decrementDate = () => {
   const newDate = new Date(selectedDate.value);
   newDate.setDate(newDate.getDate() - 1);
-
-  // Limit to a reasonable past date (e.g., 5 years back)
   const fiveYearsAgo = new Date();
   fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
 
@@ -433,6 +398,8 @@ const getFlagUrl = (currencyCode) => {
     return "https://flagcdn.com/w20/cn.png";
   } else if (currencyCode === "INR") {
     return "https://flagcdn.com/w20/in.png";
+  } else if (currencyCode === "PHP") {
+    return "https://flagcdn.com/w20/ph.png";
   } else if (currencyCode === "BTC") {
     return "https://cryptologos.cc/logos/bitcoin-btc-logo.png?v=025";
   }
@@ -454,36 +421,13 @@ const selectCurrency = (currency) => {
   }
 };
 
-// Watchers
-watch(fromCurrency, (newValue) => {
-  if (newValue === toCurrency.value) {
-    // Prevent the same currency in both fields
-    const otherOptions = currencyOptions.value.filter(c => c !== newValue);
-    toCurrency.value = otherOptions[0] || "USD";
-  }
-});
-
-watch(toCurrency, (newValue) => {
-  if (newValue === fromCurrency.value) {
-    // Prevent the same currency in both fields
-    const otherOptions = currencyOptions.value.filter(c => c !== newValue);
-    fromCurrency.value = otherOptions[0] || "USD";
-    fetchExchangeRates(fromCurrency.value);
-  }
-});
-
-// Watch for changes in the date to update rates
 watch(selectedDate, () => {
   updateDate();
 });
 
-// Initialize
 onMounted(async () => {
   try {
-    // Initialize historicalRates storage
     historicalRates.value = {};
-
-    // Fetch initial exchange rates
     await fetchExchangeRates(fromCurrency.value);
   } catch (err) {
     error.value = "Failed to initialize currency converter";
@@ -491,6 +435,7 @@ onMounted(async () => {
   }
 });
 </script>
+
 
 <style scoped>
 .currency-select {
