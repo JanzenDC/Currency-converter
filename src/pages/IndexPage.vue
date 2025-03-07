@@ -5,17 +5,11 @@
     </div>
 
     <div class="q-pa-md q-gutter-md" style="display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
-      <q-card class="my-card"> <!-- First Card -->
+      <q-card class="my-card">
         <q-card-section>
           <div class="row q-mb-md">
             <div class="col-5">
-              <q-select
-                v-model="fromCurrency"
-                :options="currencyOptions"
-                outlined
-                class="currency-select"
-                @update:model-value="handleFromCurrencyChange"
-              >
+              <q-select v-model="fromCurrency" :options="currencyOptions" outlined class="currency-select" @update:model-value="handleFromCurrencyChange">
                 <template v-slot:selected>
                   <div class="row items-center">
                     <q-avatar size="20px" class="q-mr-sm">
@@ -47,13 +41,7 @@
               </q-btn>
             </div>
             <div class="col-5">
-              <q-select
-                v-model="toCurrency"
-                :options="currencyOptions"
-                outlined
-                class="currency-select"
-                @update:model-value="handleToCurrencyChange"
-              >
+              <q-select v-model="toCurrency" :options="currencyOptions" outlined class="currency-select" @update:model-value="handleToCurrencyChange">
                 <template v-slot:selected>
                   <div class="row items-center">
                     <q-avatar size="20px" class="q-mr-sm">
@@ -83,23 +71,12 @@
 
           <div class="row q-mb-md">
             <div class="col-5">
-              <q-input
-                v-model="fromAmount"
-                outlined
-                type="number"
-                class="text-h6"
-              />
+              <q-input v-model="fromAmount" outlined type="number" class="text-h6" />
               <q-tooltip anchor="bottom middle" self="top middle">Enter the amount to convert</q-tooltip>
             </div>
             <div class="col-2"></div>
             <div class="col-5">
-              <q-input
-                v-model="toAmount"
-                outlined
-                type="number"
-                class="text-h6"
-                readonly=""
-              />
+              <q-input v-model="toAmount" outlined type="number" class="text-h6" readonly="" />
               <q-tooltip anchor="bottom middle" self="top middle">Converted amount will be displayed here</q-tooltip>
             </div>
           </div>
@@ -107,10 +84,7 @@
           <div class="row q-mb-md">
             <div class="col-12">
               <div class="row q-gutter-sm">
-                <q-btn v-for="currency in popularCurrencies" :key="currency"
-                      dense outline no-caps
-                      :color="isSelected(currency) ? 'primary' : 'grey'"
-                      @click="selectCurrency(currency)">
+                <q-btn v-for="currency in popularCurrencies" :key="currency" dense outline no-caps :color="isSelected(currency) ? 'primary' : 'grey'" @click="selectCurrency(currency)">
                   {{ currency }}
                   <q-tooltip anchor="bottom middle" self="top middle">Quick select {{ currency }}</q-tooltip>
                 </q-btn>
@@ -120,11 +94,7 @@
 
           <div class="row q-mb-md">
             <div class="col-6">
-              <q-input
-                v-model="date"
-                outlined
-                readonly
-              >
+              <q-input v-model="date" outlined readonly>
                 <template v-slot:prepend>
                   <q-icon name="event" />
                 </template>
@@ -163,7 +133,7 @@
         </q-card-section>
       </q-card>
 
-      <q-card class="my-card"> <!-- Second Card -->
+      <q-card class="my-card">
         <q-card-section>
           <div style="font-size: 20px; font-weight: bold; margin-bottom: 10px;">
             How to Use the Currency Converter
@@ -183,10 +153,14 @@
           </q-banner>
         </q-card-section>
       </q-card>
-
     </div>
+
+    <q-footer class="bg-grey-8 text-white q-pa-md text-center">
+      © 2025 <a href="https://github.com/JanzenDC/Currency-converter" target="_blank" class="text-white">Janzen DC</a>. All rights reserved.
+    </q-footer>
   </q-page>
 </template>
+
 
 <script setup>
 import { ref, onMounted, watch, computed } from "vue";
@@ -194,7 +168,8 @@ import axios from "axios";
 
 const API_KEY = "b7a95d335cc96db529e873ad";
 const API_URL = `https://v6.exchangerate-api.com/v6/${API_KEY}/latest/`;
-const HISTORICAL_API_URL = `https://v6.exchangerate-api.com/v6/${API_KEY}/history/`;
+const HAPI_KEY = "fca_live_DHvfiO5qyLvBicHs56kIC75qvDm8nK4E3ijxVSVm";
+const HISTORICAL_API_URL = `https://api.freecurrencyapi.com/v1/historical?apikey=${HAPI_KEY}&date=`;
 
 const fromCurrency = ref("GBP");
 const toCurrency = ref("EUR");
@@ -269,40 +244,19 @@ const fetchExchangeRates = async (baseCurrency) => {
 
 const fetchHistoricalRates = async (baseCurrency, dateStr) => {
   try {
-    const dateParts = dateStr.split('-');
-    const apiDateFormat = dateParts.join('/');
-    const cacheKey = `${baseCurrency}_${dateStr}`;
+    const response = await axios.get(`${HISTORICAL_API_URL}${dateStr}&base_currency=${baseCurrency}`);
 
-    if (historicalRates.value[cacheKey]) {
-      exchangeRates.value = historicalRates.value[cacheKey];
-      updateExchangeRate();
-      return;
-    }
-
-    const response = await axios.get(`${HISTORICAL_API_URL}${baseCurrency}/${apiDateFormat}`);
-
-    if (response.data.result === "success") {
-      const conversion_rates = response.data.conversion_rates;
-      historicalRates.value[cacheKey] = conversion_rates;
-      exchangeRates.value = conversion_rates;
+    if (response.data.data[dateStr]) {
+      exchangeRates.value = response.data.data[dateStr];
       updateExchangeRate();
     } else {
       error.value = "Historical data not available, using latest rates";
-      const latestResponse = await axios.get(`${API_URL}${baseCurrency}`);
-      if (latestResponse.data.result === "success") {
-        exchangeRates.value = latestResponse.data.conversion_rates;
-        updateExchangeRate();
-      }
+      await fetchExchangeRates(baseCurrency);
     }
   } catch (err) {
     error.value = "Failed to fetch historical rates, using latest rates";
     console.error(err);
-
-    const latestResponse = await axios.get(`${API_URL}${baseCurrency}`);
-    if (latestResponse.data.result === "success") {
-      exchangeRates.value = latestResponse.data.conversion_rates;
-      updateExchangeRate();
-    }
+    await fetchExchangeRates(baseCurrency);
   }
 };
 
@@ -325,6 +279,7 @@ function updateDate() {
 const updateExchangeRate = () => {
   if (exchangeRates.value && exchangeRates.value[toCurrency.value]) {
     exchangeRate.value = exchangeRates.value[toCurrency.value];
+    console.log(exchangeRate.value)
     convertFromTo();
   }
 };
@@ -332,6 +287,7 @@ const updateExchangeRate = () => {
 const convertFromTo = () => {
   if (fromAmount.value && exchangeRate.value) {
     toAmount.value = (parseFloat(fromAmount.value) * exchangeRate.value).toFixed(1);
+    console.log("To amount: ", toAmount.value)
   }
 };
 
@@ -346,7 +302,9 @@ const handleToCurrencyChange = () => {
 const swapCurrencies = () => {
   const temp = fromCurrency.value;
   fromCurrency.value = toCurrency.value;
+  console.log("From Currency: ", fromCurrency.value);
   toCurrency.value = temp;
+  console.log("To Currency: ", toCurrency.value);
   fetchExchangeRates(fromCurrency.value);
 };
 
